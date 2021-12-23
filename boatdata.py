@@ -60,12 +60,14 @@ def boathouse_occupation(day=datetime(2021, 10, 12), days=1):
 boathouse_occupation()
 
 
-def fetch_count_reservations(start_time,end_time):
+def fetch_count_reservations(start_time,end_time,type='boat'):
     q = 'SELECT count(*) FROM boat_reservations WHERE '
     q += 'begin_time >= \'{}\' and begin_time <= \'{}\''.format(start_time,end_time)
     q += 'AND removed_date IS NULL '
-    q += 'AND boat_id IN (SELECT id FROM boats WHERE type_id in ({}))'.format(','.join([str(id) for id in BOAT_IDS]))
-
+    if type == "boats":
+        q += 'AND boat_id IN (SELECT id FROM boats WHERE type_id in ({}))'.format(','.join([str(id) for id in BOAT_IDS]))
+    elif type == "ergos":
+        q += 'AND boat_id IN (SELECT id FROM boats WHERE type_id in ({}))'.format(','.join([str(id) for id in ERGO_IDS]))
     return cursor.execute(q + ';').fetchone()[0]
 
 def avg_temp(start_day,end_day):
@@ -76,12 +78,14 @@ def avg_temp(start_day,end_day):
 
 def reservations_per_week(year=2021):
     day = datetime(year=year,month=1,day=1)
-    reservations = []
+    boat_reservations = []
+    ergo_reservations = []
     dates = []
     temperatures = []
     for i in range(52):
         dates.append(day)
-        reservations.append(fetch_count_reservations(day,day+timedelta(weeks=1)))
+        boat_reservations.append(fetch_count_reservations(day,day+timedelta(weeks=1),type='boats'))
+        ergo_reservations.append(fetch_count_reservations(day,day+timedelta(weeks=1),type='ergos'))
         temperatures.append(avg_temp(day,day+timedelta(weeks=1)))
         day+= timedelta(weeks=1)
 
@@ -92,13 +96,34 @@ def reservations_per_week(year=2021):
     ax1.xaxis.set_major_formatter(formatter)
 
     ax1.set_ylabel('Reservations')
-    ax1.plot(dates,reservations, label='Reservations', color='green')
+    ax1.plot(dates,boat_reservations, label='Boats', color='green')
+    ax1.plot(dates,ergo_reservations, label='Ergos', color='blue')
 
-    ax2 = ax1.twinx()
-    ax2.set_ylabel('Avg Max Temperature')
-    ax2.plot(dates, temperatures, label='Avg Max Temperature', color='red')
+    # ax2 = ax1.twinx()
+    # ax2.set_ylabel('Avg Max Temperature')
+    # ax2.plot(dates, temperatures, label='Avg Max Temperature', color='red')
 
     fig.legend()
 reservations_per_week()
+
+def boat_reservations_per_week_all():
+    boat_reservations = [0]*52
+    ergo_reservations = [0]*52
+    dates = [0]*52
+    for j in range(9):
+        day = datetime(year=2011+j,month=1,day=1)
+        for i in range(52):
+            dates[i] = day
+            boat_reservations[i] += fetch_count_reservations(day,day+timedelta(weeks=1),type='boats')
+            ergo_reservations[i] += fetch_count_reservations(day,day+timedelta(weeks=1),type='ergos')
+            day+= timedelta(weeks=1)
+
+    fig, ax = plt.subplots()
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+
+    ax.set_ylabel('Reservations')
+    ax.plot(dates,boat_reservations, label='Boats', color='green')
+    ax.plot(dates,ergo_reservations, label='Ergos', color='blue')
+boat_reservations_per_week_all()
 
 connection.close()
