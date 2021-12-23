@@ -31,7 +31,7 @@ def fetch_reservations(start_time,end_time,type):
 
 def accumulate(data, timeslots, accumulator):
     if not accumulator:
-        accumulator = [0]*69
+        accumulator = [0]*len(timeslots)
     for i,ts in enumerate(timeslots):
         for bt, et in data:
             if bt<=ts and et> ts:
@@ -43,6 +43,7 @@ def boathouse_occupation(day=datetime(2021, 10, 12), days=1):
     accumulator_ergos = []
     for i in range(days):
         timeslots = [day + timedelta(hours=6,minutes=15*x) for x in range(69)]
+        # timeslots = [day + timedelta(hours=6+x) for x in range(18)]
 
         data = fetch_reservations(day, day+timedelta(days=1), type="boats")
         accumulator_boats = accumulate(data,timeslots,accumulator_boats)
@@ -68,6 +69,9 @@ def fetch_count_reservations(start_time,end_time,type='boat'):
         q += 'AND boat_id IN (SELECT id FROM boats WHERE type_id in ({}))'.format(','.join([str(id) for id in BOAT_IDS]))
     elif type == "ergos":
         q += 'AND boat_id IN (SELECT id FROM boats WHERE type_id in ({}))'.format(','.join([str(id) for id in ERGO_IDS]))
+    elif type == 'either':
+        q += 'AND boat_id IN (SELECT id FROM boats WHERE type_id in ({}))'.format(','.join([str(id) for id in ERGO_IDS+BOAT_IDS]))
+
     return cursor.execute(q + ';').fetchone()[0]
 
 def avg_temp(start_day,end_day):
@@ -125,5 +129,32 @@ def boat_reservations_per_week_all():
     ax.plot(dates,boat_reservations, label='Boats', color='green')
     ax.plot(dates,ergo_reservations, label='Ergos', color='blue')
 boat_reservations_per_week_all()
+
+def peak_hour(day=datetime(2021, 10, 12), days=1):
+    accumulator = []
+    for i in range(days):
+        timeslots = [day + timedelta(hours=6+x) for x in range(18)]
+
+        data = fetch_reservations(day, day+timedelta(days=1), type='boats')
+        accumulator = accumulate(data,timeslots,accumulator)
+        day += timedelta(days=1)
+
+    return timeslots[accumulator.index(max(accumulator))].time()
+peak_hour()
+
+def peak_hour_per_week(year=2021):
+    day = datetime(year=year,month=1,day=1)
+    dates = []
+    peak_hours = []
+    for i in range(52):
+        peak_hours.append(peak_hour(day,7).hour)
+        dates.append(day)
+        day += timedelta(weeks=1)
+
+    fig, ax = plt.subplots()
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+
+    ax.plot(dates,peak_hours)
+peak_hour_per_week()
 
 connection.close()
