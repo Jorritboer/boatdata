@@ -58,6 +58,8 @@ def boathouse_occupation(day=datetime(2021, 10, 12), days=1):
     ax.bar([t.strftime("%H:%M")for t in timeslots], accumulator_boats, align='edge',width=1, color='b', label='boats')
     ax.bar([t.strftime("%H:%M")for t in timeslots], accumulator_ergos, align='edge',width=1,bottom=accumulator_boats, color='y',label='ergos')
     plt.legend()
+
+    return (timeslots,accumulator_boats,accumulator_ergos)
 boathouse_occupation()
 
 
@@ -88,8 +90,8 @@ def reservations_per_week(year=2021):
     temperatures = []
     for i in range(52):
         dates.append(day)
-        boat_reservations.append(fetch_count_reservations(day,day+timedelta(weeks=1),type='boats'))
-        ergo_reservations.append(fetch_count_reservations(day,day+timedelta(weeks=1),type='ergos'))
+        boat_reservations.append(fetch_count_reservations(day,day+timedelta(weeks=1),type='either'))
+        # ergo_reservations.append(fetch_count_reservations(day,day+timedelta(weeks=1),type='ergos'))
         temperatures.append(avg_temp(day,day+timedelta(weeks=1)))
         day+= timedelta(weeks=1)
 
@@ -101,13 +103,14 @@ def reservations_per_week(year=2021):
 
     ax1.set_ylabel('Reservations')
     ax1.plot(dates,boat_reservations, label='Boats', color='green')
-    ax1.plot(dates,ergo_reservations, label='Ergos', color='blue')
+    # ax1.plot(dates,ergo_reservations, label='Ergos', color='blue')
 
     # ax2 = ax1.twinx()
     # ax2.set_ylabel('Avg Max Temperature')
     # ax2.plot(dates, temperatures, label='Avg Max Temperature', color='red')
 
     fig.legend()
+    return (dates,boat_reservations,ergo_reservations)
 reservations_per_week()
 
 def boat_reservations_per_week_all():
@@ -118,8 +121,8 @@ def boat_reservations_per_week_all():
         day = datetime(year=2011+j,month=1,day=1)
         for i in range(52):
             dates[i] = day
-            boat_reservations[i] += fetch_count_reservations(day,day+timedelta(weeks=1),type='boats')
-            ergo_reservations[i] += fetch_count_reservations(day,day+timedelta(weeks=1),type='ergos')
+            boat_reservations[i] += fetch_count_reservations(day,day+timedelta(weeks=1),type='either')
+            # ergo_reservations[i] += fetch_count_reservations(day,day+timedelta(weeks=1),type='ergos')
             day+= timedelta(weeks=1)
 
     fig, ax = plt.subplots()
@@ -127,7 +130,8 @@ def boat_reservations_per_week_all():
 
     ax.set_ylabel('Reservations')
     ax.plot(dates,boat_reservations, label='Boats', color='green')
-    ax.plot(dates,ergo_reservations, label='Ergos', color='blue')
+    # ax.plot(dates,ergo_reservations, label='Ergos', color='blue')
+    return (dates,boat_reservations,ergo_reservations)
 boat_reservations_per_week_all()
 
 def peak_hour(day=datetime(2021, 10, 12), days=1):
@@ -156,5 +160,18 @@ def peak_hour_per_week(year=2021):
 
     ax.plot(dates,peak_hours)
 peak_hour_per_week()
+
+#DataDonderdag 1
+x,boats,ergos = boathouse_occupation(day=datetime(2010,4,27),days=4100)
+print(boats)
+print(ergos)
+print([t.strftime("%H:%M") for t in x])
+
+#DataDonderdag 2
+x,boats_total,_ = boat_reservations_per_week_all()
+_,boats_2020,_ = reservations_per_week(2020)
+print([t.strftime("%d-%m") for t in x])
+print(boats_total)
+print(boats_2020)
 
 connection.close()
